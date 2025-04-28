@@ -1,7 +1,8 @@
 import spacy.parts_of_speech
+from spacy import Language
 
 
-def default_list(nlp):
+def default_list(nlp: Language) -> dict:
     """Récupère la liste des upos possibles.
 
     Args:
@@ -23,7 +24,9 @@ def default_list(nlp):
     return priorities
 
 
-def list_pos_priorities(postags, similarities, default_priority):
+def list_pos_priorities(
+    postags: list, similarities: dict, default_priority: list
+) -> dict:
     """Construit un dictionnaire de proximitié des POS tags.
 
     Args:

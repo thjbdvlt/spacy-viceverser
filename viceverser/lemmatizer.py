@@ -1,7 +1,7 @@
 import hunspell
 import informifier
 import spacy.lookups
-from spacy.tokens import Doc
+from spacy.tokens import Doc, Token
 from spacy.parts_of_speech import NAMES as POS_NAMES
 import viceverser.francais.lemmes_exceptions
 import viceverser.utils.pos_rules
@@ -16,7 +16,7 @@ def analyze_word_with_prefix(analysis: list[bytes]):
     parts = analysis.split()
     st = []
     for i in parts:
-        if i == b'|':
+        if i == b"|":
             break
         elif i.startswith(b"st:"):
             st.append(i[3:])
@@ -36,7 +36,6 @@ class Lemmatizer:
         pos_rules=None,
         pfx: str = "adp",
     ):
-
         if exc is None:
             exc = viceverser.francais.lemmes_exceptions.exc
 
@@ -81,7 +80,9 @@ class Lemmatizer:
         table[norm] = lemma
         return lemma
 
-    def find_lemma_compound(self, word: str, norm: int, upos: str) -> str:
+    def find_lemma_compound(
+        self, word: str, norm: int, upos: str
+    ) -> str:
         """Find the lemma of a hyphen-based compound word."""
 
         # get the table (according to word's pos)
@@ -146,9 +147,9 @@ class Lemmatizer:
             stem = None
             # FIXME: this functions only keeps one word for compound words like "antisocial", which MUST NOT be lemmatized as "anti", as it is now.
             for a in attrs:
-                if a.startswith(b'po:'):
+                if a.startswith(b"po:"):
                     po_tags.add(a[3:])
-                elif a.startswith(b'st:'):
+                elif a.startswith(b"st:"):
                     if not stem:
                         stem = a[3:]
             if stem:
@@ -164,22 +165,11 @@ class Lemmatizer:
 
         return None
 
-    def get_lemma(self, token):
-        """Assigne un lemme à un token.
-
-        Args:
-            token (Token): le token.
-
-        Returns (None)
-
-        Note:
-            l'attribut `token.lemma_` est modifié par cette méthode.
-        """
-
+    def get_lemma(self, token: Token) -> str:
+        """Assigne un lemme à un token."""
         word = token.norm_
         norm = token.norm
         upos = self.upos_lower[token.pos]
-
         if "-" in word:
             return self.find_lemma_compound(word, norm, upos)
         else:
@@ -189,22 +179,17 @@ class Lemmatizer:
         if upos in ("verb", "aux") and not word.endswith("er"):
             lemma, like = informifier.informifier(word)
             self.hobj.add_with_affix(lemma, like)
-
         elif upos in ("noun", "adj"):
             if word[-1] in ("x", "s"):
                 lemma = word[:-1]
-
             else:
                 lemma = word
-
         else:
             lemma = word
-
         return lemma
 
     def __call__(self, doc: Doc) -> Doc:
         """Lemmatize a Doc."""
-
         for token in doc:
             token.lemma_ = self.get_lemma(token)
         return doc
@@ -219,7 +204,7 @@ def create_viceverser_lemmatizer(
     name,
     dic: Union[str, Callable],
     aff: Union[str, Callable],
-):
+) -> Lemmatizer:
     if callable(dic):
         dic = dic()
     if callable(aff):
