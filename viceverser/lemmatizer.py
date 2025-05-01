@@ -3,8 +3,8 @@ import informifier
 import spacy.lookups
 from spacy.tokens import Doc, Token
 from spacy.parts_of_speech import NAMES as POS_NAMES
-import viceverser.francais.lemmes_exceptions
-import viceverser.utils.pos_rules
+from . import fr_exc
+from . import pos_rules
 from typing import Union, Callable
 
 
@@ -33,24 +33,18 @@ class Lemmatizer:
         nlp,
         dic: str,
         aff: str,
-        exc=None,
+        exc=fr_exc.exc,
         pfx: str = "adp",
     ):
-        if exc is None:
-            exc = viceverser.francais.lemmes_exceptions.exc
-
         self.upos_lower = {i: POS_NAMES[i].lower() for i in POS_NAMES}
-
         self.lookups = spacy.lookups.Lookups()
         self.hobj = hunspell.HunSpell(dic, aff)
         self.nlp = nlp
-        self.pos_priorities = viceverser.utils.pos_rules.default_list(nlp)
+        self.pos_priorities = pos_rules.default_list(nlp)
         self.strings = nlp.vocab.strings
         self.pfx = pfx
-
         for i in self.pos_priorities.keys():
             self.lookups.add_table(i, {})
-
         for pos in exc.keys():
             t = self.lookups.get_table(pos)
             for word, lemma in exc[pos].items():
