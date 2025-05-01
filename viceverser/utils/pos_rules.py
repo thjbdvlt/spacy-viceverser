@@ -2,6 +2,26 @@ import spacy.parts_of_speech
 from spacy import Language
 
 
+POS_DEFAULT_PRIORITY = [
+    "pron",
+    "det",
+    "cconj",
+    "sconj",
+    "aux",
+    "verb",
+    "noun",
+]
+
+POS_SIMILARITIES = {
+    "aux": ["verb"],
+    "verb": ["aux", "adj", "noun"],
+    "noun": ["adj", "verb"],
+    "adj": ["noun", "verb"],
+    "det": ["cconj", "sconj", "pron", "adp"],
+    "pron": ["det", "cconj", "sconj", "adp"],
+}
+
+
 def default_list(nlp: Language) -> dict:
     """Récupère la liste des upos possibles.
 
@@ -37,16 +57,16 @@ def list_pos_priorities(
         similarities={"verb": ["aux"], "cconj": ["sconj", "det"]}
         default_priority=["noun", "verb", "pron"]
 
-    aucune des deux liste n'a besoin d'être exhaustive. elle sera complétée par les tags possibles (récupérée dans les labels du morphologizer).
+    Aucune des deux liste n'a besoin d'être exhaustive. elle sera complétée par les tags possibles (récupérée dans les labels du morphologizer).
 
-    l'attribution des pos-tags n'est pas toujours très précise pour le français avec les modèles actuellement proposés par spacy. or, l'attribution d'un lemme dépend de son pos-tag (par exemple: sommes:noun->somme  sommes:verb->être). je fixe donc des règles qui disent:
-    si `pos=noun`, alors regarder d'abord si un lemme est fixé pour ce mot en tant que nom. s'il n'y a aucun résultat, alors regarder si un lemme est fixé pour ce mot en tant que verbe, puis si ce n'est pas le cas, en tant qu'auxiliaire, etc., jusqu'à trouvé un mot ou jusqu'à avoir épuisé toutes les catégories grammaticalse, et donc tous les mots du lexique.
-    chaque catégorie est proches de certaines catégorie, est éloignée d'autres. donc en cas d'erreur, un mot identifié à une certaine catégorie est plus ou moins susceptible d'appartenir en fait à certaines catégorie qu'à d'autres. typiquement, les `aux` sont toujours des `verb` en français, donc on peut imaginer un mot taggé par erreur comme `aux`: on a plus de chance de le trouver en fait dans les `verb` que dans les `det`. un autre cas: les modèles proposés par spacy pour le français ne reconnaissent pas les verbes à l'infinitif présent, qui seront toujours taggés comme `noun`. donc si un mot avec la catégorie `noun` n'existe pas, le mieux à faire est de regarder si le même mot avec la catégorie `verb`, lui, existe.
+    L'attribution des pos-tags n'est pas toujours très précise pour le français avec les modèles actuellement proposés par spacy. Or, l'attribution d'un lemme dépend de son pos-tag (par exemple: sommes:noun->somme  sommes:verb->être). Je fixe donc des règles qui disent:
+    - si `pos=noun`, alors regarder d'abord si un lemme est fixé pour ce mot en tant que nom. S'il n'y a aucun résultat, alors regarder si un lemme est fixé pour ce mot en tant que verbe, puis si ce n'est pas le cas, en tant qu'auxiliaire, etc., jusqu'à trouvé un mot ou jusqu'à avoir épuisé toutes les catégories grammaticalse, et donc tous les mots du lexique.
+    Chaque catégorie est proches de certaines catégorie, est éloignée d'autres. Donc en cas d'erreur, un mot identifié à une certaine catégorie est plus ou moins susceptible d'appartenir en fait à certaines catégorie qu'à d'autres. Typiquement, les `aux` sont toujours des `verb` en français, donc on peut imaginer un mot taggé par erreur comme `aux`: on a plus de chance de le trouver en fait dans les `verb` que dans les `det`. Un autre cas: les modèles proposés par spacy pour le français ne reconnaissent pas les verbes à l'infinitif présent, qui seront toujours taggés comme `noun`. Donc si un mot avec la catégorie `noun` n'existe pas, le mieux à faire est de regarder si le même mot avec la catégorie `verb`, lui, existe.
 
-    1. récupère la liste des tags possibles (dans le morphologizer).
-    2. complète la liste de priorité par défault avec les tags possibles manquants (placés à la fin).
-    3. compléter le dictionnaire de similarités.
-    4. ajouter au dictionnaire de similarités, pour chaque pos-tag, une entrée sous forme de tuple ("adp", tag), ex. ("adp", "noun"), qui sera utilisée pour la lemmatisation des mots composés, car les parties qui composent les mots composés sont généralement:
+    1. Récupère la liste des tags possibles (dans le morphologizer).
+    2. Complète la liste de priorité par défault avec les tags possibles manquants (placés à la fin).
+    3. Compléte le dictionnaire de similarités.
+    4. Ajoute au dictionnaire de similarités, pour chaque pos-tag, une entrée sous forme de tuple ("adp", tag), ex. ("adp", "noun"), qui sera utilisée pour la lemmatisation des mots composés, car les parties qui composent les mots composés sont généralement:
         - des adpositions (suffixes ou préfixes): socio-critique.
         - des mots de même nature que le mot composé (maison-bateau).
     """

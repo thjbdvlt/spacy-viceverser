@@ -10,9 +10,10 @@ from typing import Union, Callable
 
 def analyze_word_with_prefix(analysis: list[bytes]):
     """Analyze a compound word like "reparler", with prefix.
-    [b' pa:a st:a po:pfx pa:ambiances ( st:ambiance po:noun is:pl | st:ambiancer po:verb is:ipre is:spre is:2sg )]"""
-    # this function does nothing complicated and only manage simple cases. when a `|` symbol is encountered, the function ends.
-    # it manages cases like "prémangerions" or "XVVII".
+    [b'pa:a st:a po:pfx pa:ambiances ( st:ambiance po:noun is:pl | st:ambiancer po:verb is:ipre is:spre is:2sg )']
+    This function does nothing complicated and only manage simple cases, like "prémangerions" or "XVVII".
+    When a `|` symbol is encountered, the function ends.
+    """
     parts = analysis.split()
     st = []
     for i in parts:
@@ -33,21 +34,17 @@ class Lemmatizer:
         dic: str,
         aff: str,
         exc=None,
-        pos_rules=None,
         pfx: str = "adp",
     ):
         if exc is None:
             exc = viceverser.francais.lemmes_exceptions.exc
-
-        if pos_rules is None:
-            pos_rules = viceverser.utils.pos_rules.default_list(nlp)
 
         self.upos_lower = {i: POS_NAMES[i].lower() for i in POS_NAMES}
 
         self.lookups = spacy.lookups.Lookups()
         self.hobj = hunspell.HunSpell(dic, aff)
         self.nlp = nlp
-        self.pos_priorities = pos_rules
+        self.pos_priorities = viceverser.utils.pos_rules.default_list(nlp)
         self.strings = nlp.vocab.strings
         self.pfx = pfx
 
@@ -176,14 +173,12 @@ class Lemmatizer:
             return self.find_lemma(word, norm, upos)
 
     def rule_lemmatize(self, word: str, upos: str) -> str:
+        """Lemmatize a word using rules, according to pos."""
         if upos in ("verb", "aux") and not word.endswith("er"):
             lemma, like = informifier.informifier(word)
             self.hobj.add_with_affix(lemma, like)
-        elif upos in ("noun", "adj"):
-            if word[-1] in ("x", "s"):
-                lemma = word[:-1]
-            else:
-                lemma = word
+        elif upos in ("noun", "adj") and word[-1] in ("x", "s"):
+            lemma = word[:-1]
         else:
             lemma = word
         return lemma
